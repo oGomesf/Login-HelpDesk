@@ -1,8 +1,35 @@
 import customtkinter as ctk
-from tkinter import PhotoImage
+from tkinter import *
+import sqlite3
 
+# -- Criando Banco de Dados --
+class BackEnd():
+    def ConectarDB(self):
+        self.conn = sqlite3.connect("sistema-cadastro.db")
+        self.cursor = self.conn.cursor()
+        print("Banco de Dados Conectado")
 
-class app(ctk.CTk):
+    def DesconectDB(self):
+        self.conn.close()
+        print("Banco de Dados Desconectado")
+
+    def Criar_tabela(self):
+        self.ConectarDB()
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Usuario(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Username TEXT NOT NULL,
+                Email TEXT NOT NULL,
+                Senha TEXT NOT NULL,
+                Confirma_senha TEXT NOT NULL
+            );
+        """)
+        self.conn.commit()
+        print("Tabela criada com sucesso!")
+        self.DesconectDB()
+
+class app(ctk.CTk, BackEnd):
     def __init__(self):
         super().__init__()
         self.Config_janela_inicial()
@@ -67,8 +94,8 @@ class app(ctk.CTk):
         self.user_cad_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite seu usuário", font=("Century Gothic", 14, "bold"), corner_radius=15)
         self.user_cad_entry.grid(row=1, column=0, padx=10, pady=5)
 
-        self.user_cad_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite seu e-mail", font=("Century Gothic", 14, "bold"), corner_radius=15)
-        self.user_cad_entry.grid(row=2, column=0, padx=10, pady=5)
+        self.user_cad_email_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite seu e-mail", font=("Century Gothic", 14, "bold"), corner_radius=15)
+        self.user_cad_email_entry.grid(row=2, column=0, padx=10, pady=5)
         
         self.user_pass_cad_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite sua senha", font=("Century Gothic", 14, "bold"),
                                              corner_radius=15, show= "*")
@@ -88,9 +115,16 @@ class app(ctk.CTk):
         self.btn_login_back = ctk.CTkButton(self.frame_cadastro, width=200, text="Voltar ao Login",font=("Century Gothic", 14, "bold"), fg_color="Dark Blue",
                                             corner_radius=10,command=self.tela_login)
         self.btn_login_back.grid(row=7, column=0, padx=10, pady=5)
+    
+    def Clear_entry_cad(self):
+        self.user_cad_entry.delete(0, END)
+        self.user_pass_cad_entry.delete(0, END)
+        self.user_cad_email_entry(0, END)
+        self.confirm_pass_cad_entry.delete(0, END)
 
-        
-
+    def Clear_entry_login(self):
+        self.user_login_entry.delete(0, END)
+        self.user_pass_entry.delete(0, END)
 
 
 
