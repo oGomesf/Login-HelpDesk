@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import *
 import sqlite3
+from tkinter import messagebox
 
 # -- Criando Banco de Dados --
 class BackEnd():
@@ -17,10 +18,10 @@ class BackEnd():
         self.ConectarDB()
 
         self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS Usuario(
+            CREATE TABLE IF NOT EXISTS Usuarios(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Username TEXT NOT NULL,
-                Email TEXT NOT NULL,
+                Username TEXT UNIQUE NOT NULL,
+                Email TEXT UNIQUE NOT NULL,
                 Senha TEXT NOT NULL,
                 Confirma_senha TEXT NOT NULL
             );
@@ -29,11 +30,48 @@ class BackEnd():
         print("Tabela criada com sucesso!")
         self.DesconectDB()
 
+    def Cadastrar_usuario(self):
+    # Pegando os dados dos campos corretos criados na tela_cadastro
+        self.user_cadastro = self.user_cad_entry.get()
+        self.email_cadastro = self.user_cad_email_entry.get()
+        self.pass_cadastro = self.user_cad_pass_entry.get()
+        self.confirm_pass_cadastro = self.confirm_cad_pass_entry.get()
+
+        if self.user_cadastro == "" or self.email_cadastro == "" or self.pass_cadastro == "" or self.confirm_pass_cadastro == "":
+            messagebox.showerror(title="Sistema de Login", message="Por favor, preencha todos os campos!")
+            return
+        
+        if self.pass_cadastro != self.confirm_pass_cadastro:
+            messagebox.showerror(title="Sistema de Login",message="As senhas nao coincidem!")
+            return
+
+        self.ConectarDB()
+        try:
+            self.cursor.execute("""
+                INSERT INTO Usuarios (Username, Email, Senha, Confirma_senha)
+                VALUES (?,?,?,?)""", (self.user_cadastro, self.email_cadastro, self.pass_cadastro, self.confirm_pass_cadastro))
+            self.conn.commit()
+            messagebox.showinfo(title="Sistema de login",message="Dados cadastrados com sucesso")
+            self.Clear_entry_cad()
+        except sqlite3.IntegrityError as u:
+            erro_msg = str(u)
+            if "Usuarios.Username" in erro_msg:
+                messagebox.showerror(title="Usuário invalido", message="O usuário já foi cadastrado!")
+            if "Usuarios.Email" in erro_msg:
+                messagebox.showerror(title="Email inválido",message="Email já cadastrado!")
+
+            
+        finally:
+            self.DesconectDB()
+
+
+# -- APP MAIN --
 class app(ctk.CTk, BackEnd):
     def __init__(self):
         super().__init__()
         self.Config_janela_inicial()
         self.tela_login()
+        self.Criar_tabela()
 
     # -- CONFIGURAÇAO JANELA PRINCIPAL -- 
     def Config_janela_inicial(self):
@@ -49,8 +87,8 @@ class app(ctk.CTk, BackEnd):
         self.label_img = ctk.CTkLabel(self, text=None, image= self.img)
         self.label_img.grid(row=1, column=0, padx=10)
 
-        self.title = ctk.CTkLabel(self, text="Faça o login ou cadastre-se\npara acessar o Help Desk!",font= ("Century Gothic", 15, "bold"))
-        self.title.grid(row=0, column=0, pady= 10, padx=10)
+        self.titulo_label = ctk.CTkLabel(self, text="Faça o login ou cadastre-se\npara acessar o Help Desk!",font= ("Century Gothic", 15, "bold"))
+        self.titulo_label.grid(row=0, column=0, pady= 10, padx=10)
 
     #-- Formulário login -- 
         self.frame_login = ctk.CTkFrame(self, width=350, height=380)
@@ -97,19 +135,19 @@ class app(ctk.CTk, BackEnd):
         self.user_cad_email_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite seu e-mail", font=("Century Gothic", 14, "bold"), corner_radius=15)
         self.user_cad_email_entry.grid(row=2, column=0, padx=10, pady=5)
         
-        self.user_pass_cad_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite sua senha", font=("Century Gothic", 14, "bold"),
+        self.user_cad_pass_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Digite sua senha", font=("Century Gothic", 14, "bold"),
                                              corner_radius=15, show= "*")
-        self.user_pass_cad_entry.grid(row=3, column=0, padx=10, pady=5)
+        self.user_cad_pass_entry.grid(row=3, column=0, padx=10, pady=5)
 
-        self.confirm_pass_cad_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Confirme sua senha", font=("Century Gothic", 14, "bold"),
+        self.confirm_cad_pass_entry = ctk.CTkEntry(self.frame_cadastro,width=300, placeholder_text="Confirme sua senha", font=("Century Gothic", 14, "bold"),
                                              corner_radius=15, show= "*")
-        self.confirm_pass_cad_entry.grid(row=4, column=0, padx=10, pady=5)
+        self.confirm_cad_pass_entry.grid(row=4, column=0, padx=10, pady=5)
 
         self.show_pass = ctk.CTkCheckBox(self.frame_cadastro,text="Clique para ver a senha", font=("Century Gothic", 12, "bold"))
         self.show_pass.grid(row=5, column=0, padx=10, pady=5)
 
         self.btn_cadastrar_user = ctk.CTkButton(self.frame_cadastro, width=200, text="Cadastrar",font=("Century Gothic", 14, "bold"), fg_color="Dark Green",
-                                          corner_radius=10, command=self.tela_login)
+                                          corner_radius=10, command=self.Cadastrar_usuario)
         self.btn_cadastrar_user.grid(row=6, column=0, padx=10, pady=5)
 
         self.btn_login_back = ctk.CTkButton(self.frame_cadastro, width=200, text="Voltar ao Login",font=("Century Gothic", 14, "bold"), fg_color="Dark Blue",
@@ -118,9 +156,9 @@ class app(ctk.CTk, BackEnd):
     
     def Clear_entry_cad(self):
         self.user_cad_entry.delete(0, END)
-        self.user_pass_cad_entry.delete(0, END)
-        self.user_cad_email_entry(0, END)
-        self.confirm_pass_cad_entry.delete(0, END)
+        self.user_cad_pass_entry.delete(0, END)
+        self.user_cad_email_entry.delete(0, END)
+        self.confirm_cad_pass_entry.delete(0, END)
 
     def Clear_entry_login(self):
         self.user_login_entry.delete(0, END)
