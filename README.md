@@ -39,7 +39,7 @@ pip install customtkinter
 Execução
 Bash
 # Execute o arquivo de entrada (app.py)
-python app.py
+python main.py
 📁 Estrutura do Projeto (FINAL - estado atual, em progresso. irei organizar melhor conforme for integrando os sistemas)
 Plaintext
 ├── database/
