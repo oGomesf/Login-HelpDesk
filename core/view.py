@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import *
+from tkinter import ttk
 
 class AppView(ctk.CTk):
     def __init__(self, controller):
@@ -111,3 +112,111 @@ class AppView(ctk.CTk):
     def Clear_entry_login(self):
         self.user_login_entry.delete(0, END)
         self.user_pass_entry.delete(0, END)
+
+    def tela_dashboard(self):
+        # 1. Limpeza TOTAL para evitar erro de conflito "grid/pack"
+        for widget in self.winfo_children():
+            widget.grid_forget()
+            widget.pack_forget()
+            widget.place_forget()
+
+        # 2. Configurações da Janela
+        self.geometry("1000x600")
+        self.title("Sistema Help Desk - Dashboard")
+
+        # 3. Sidebar (Barra Lateral)
+        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar.pack(side="left", fill="y")
+
+        self.logo_label = ctk.CTkLabel(self.sidebar, text="HELP DESK", font=("Century Gothic", 22, "bold"))
+        self.logo_label.pack(pady=30, padx=20)
+
+        # Botão para abrir o formulário de novo chamado
+        self.btn_novo_chamado = ctk.CTkButton(self.sidebar, text="Novo Chamado", 
+                                               command=self.abrir_formulario_chamado,
+                                               fg_color="green", hover_color="#006400")
+        self.btn_novo_chamado.pack(pady=10, padx=20)
+
+        # Botão de Sair (volta para o login)
+        self.btn_sair = ctk.CTkButton(self.sidebar, text="Sair / Logout", fg_color="#910000", 
+                                       command=self.tela_login)
+        self.btn_sair.pack(side="bottom", pady=20, padx=20)
+
+        # 4. Painel Principal (Lado Direito)
+        self.main_frame = ctk.CTkFrame(self, corner_radius=10)
+        self.main_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+
+        self.dash_title = ctk.CTkLabel(self.main_frame, text="Gerenciamento de Chamados", font=("Century Gothic", 24, "bold"))
+        self.dash_title.pack(pady=(20, 10))
+
+        # 5. Estilização da Treeview (Tabela)
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Treeview", 
+                        background="#2b2b2b", 
+                        foreground="white", 
+                        rowheight=25, 
+                        fieldbackground="#2b2b2b", 
+                        borderwidth=0)
+        style.configure("Treeview.Heading", background="#333333", foreground="white", relief="flat")
+        style.map("Treeview", background=[('selected', '#1f538d')])
+
+        # Container para a tabela
+        self.tree_frame = Frame(self.main_frame, bg="#2b2b2b")
+        self.tree_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        # Criação da Tabela
+        self.tree = ttk.Treeview(self.tree_frame, columns=("ID", "Título", "Status", "Data"), show="headings")
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Título", text="Título")
+        self.tree.heading("Status", text="Status")
+        self.tree.heading("Data", text="Data de Abertura")
+        
+        self.tree.column("ID", width=50, anchor="center")
+        self.tree.column("Título", width=350)
+        self.tree.column("Status", width=120, anchor="center")
+        self.tree.column("Data", width=150, anchor="center")
+        
+        self.tree.pack(fill="both", expand=True)
+
+        # 6. Botões de Ação (CRUD) abaixo da tabela
+        self.action_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.action_frame.pack(fill="x", padx=20, pady=20)
+
+        self.btn_refresh = ctk.CTkButton(self.action_frame, text="Atualizar Lista", 
+                                          command=self.controller.carregar_tabela_chamados)
+        self.btn_refresh.pack(side="left", padx=5)
+
+        self.btn_delete = ctk.CTkButton(self.action_frame, text="Excluir Selecionado", 
+                                         fg_color="#910000", hover_color="#6b0000",
+                                         command=self.controller.excluir_chamado_logica)
+        self.btn_delete.pack(side="right", padx=5)
+
+        # 7. Carregar dados iniciais
+        self.controller.carregar_tabela_chamados()
+
+    def abrir_formulario_chamado(self):
+        """Cria uma janela pop-up (Toplevel) para cadastrar novo chamado"""
+        self.janela_pop = ctk.CTkToplevel(self)
+        self.janela_pop.title("Novo Chamado")
+        self.janela_pop.geometry("400x400")
+        self.janela_pop.attributes("-topmost", True) # Mantém a janela na frente
+
+        ctk.CTkLabel(self.janela_pop, text="Abrir Novo Chamado", font=("Arial", 18, "bold")).pack(pady=20)
+
+        entry_titulo = ctk.CTkEntry(self.janela_pop, placeholder_text="Título do Problema", width=300)
+        entry_titulo.pack(pady=10)
+
+        entry_desc = ctk.CTkTextbox(self.janela_pop, width=300, height=150)
+        entry_desc.pack(pady=10)
+        entry_desc.insert("0.0", "Descrição do problema...")
+
+        btn_salvar = ctk.CTkButton(self.janela_pop, text="Salvar Chamado", 
+                                   command=lambda: self.controller.novo_chamado_logica(
+                                       entry_titulo.get(), 
+                                       entry_desc.get("0.0", "end-1c"), 
+                                       self.janela_pop
+                                   ))
+        btn_salvar.pack(pady=20)
+        
+        
