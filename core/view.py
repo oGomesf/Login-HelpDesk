@@ -114,42 +114,42 @@ class AppView(ctk.CTk):
         self.user_pass_entry.delete(0, END)
 
     def tela_dashboard(self):
-        # 1. Limpeza TOTAL para evitar erro de conflito "grid/pack"
+        # -- Laço de limpeza dos frames principais --
         for widget in self.winfo_children():
             widget.grid_forget()
             widget.pack_forget()
             widget.place_forget()
 
-        # 2. Configurações da Janela
+        #-- Configurações da Janela --
         self.geometry("1000x600")
         self.title("Sistema Help Desk - Dashboard")
 
-        # 3. Sidebar (Barra Lateral)
+        #-- Barra Lateral --
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar.pack(side="left", fill="y")
 
         self.logo_label = ctk.CTkLabel(self.sidebar, text="HELP DESK", font=("Century Gothic", 22, "bold"))
         self.logo_label.pack(pady=30, padx=20)
 
-        # Botão para abrir o formulário de novo chamado
+        # -- Botao Criar chamado --
         self.btn_novo_chamado = ctk.CTkButton(self.sidebar, text="Novo Chamado", 
                                                command=self.abrir_formulario_chamado,
                                                fg_color="green", hover_color="#006400")
         self.btn_novo_chamado.pack(pady=10, padx=20)
 
-        # Botão de Sair (volta para o login)
+        # -- Botão de Sair --
         self.btn_sair = ctk.CTkButton(self.sidebar, text="Sair / Logout", fg_color="#910000", 
-                                       command=self.tela_login)
+                                                        command=self.controller.fazer_logout)
         self.btn_sair.pack(side="bottom", pady=20, padx=20)
 
-        # 4. Painel Principal (Lado Direito)
+        #-- Painel Principal --
         self.main_frame = ctk.CTkFrame(self, corner_radius=10)
         self.main_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
         self.dash_title = ctk.CTkLabel(self.main_frame, text="Gerenciamento de Chamados", font=("Century Gothic", 24, "bold"))
         self.dash_title.pack(pady=(20, 10))
 
-        # 5. Estilização da Treeview (Tabela)
+        #-- Estilo da Tabela --
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", 
@@ -161,62 +161,99 @@ class AppView(ctk.CTk):
         style.configure("Treeview.Heading", background="#333333", foreground="white", relief="flat")
         style.map("Treeview", background=[('selected', '#1f538d')])
 
-        # Container para a tabela
+        # -- Container para a tabela --
         self.tree_frame = Frame(self.main_frame, bg="#2b2b2b")
         self.tree_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # Criação da Tabela
-        self.tree = ttk.Treeview(self.tree_frame, columns=("ID", "Título", "Status", "Data"), show="headings")
+        # -- Criação da Tabela --
+        self.tree = ttk.Treeview(self.tree_frame, columns=("ID", "Título","Prioridade", "Status", "Data"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Título", text="Título")
+        self.tree.heading("Prioridade", text="Título")
         self.tree.heading("Status", text="Status")
         self.tree.heading("Data", text="Data de Abertura")
         
         self.tree.column("ID", width=50, anchor="center")
-        self.tree.column("Título", width=350)
+        self.tree.column("Título", width=225)
+        self.tree.column("Prioridade", width=125, anchor="center")
         self.tree.column("Status", width=120, anchor="center")
         self.tree.column("Data", width=150, anchor="center")
         
         self.tree.pack(fill="both", expand=True)
 
-        # 6. Botões de Ação (CRUD) abaixo da tabela
+        #-- Botões de ação abaixo da tabela --
         self.action_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         self.action_frame.pack(fill="x", padx=20, pady=20)
+
+        self.btn_info = ctk.CTkButton(self.action_frame, text="Ver Informações", 
+                               fg_color="blue", hover_color="#00008B",
+                               command=self.controller.ver_informacoes_logica)
+        self.btn_info.pack(side="left", padx=5)
 
         self.btn_refresh = ctk.CTkButton(self.action_frame, text="Atualizar Lista", 
                                           command=self.controller.carregar_tabela_chamados)
         self.btn_refresh.pack(side="left", padx=5)
+
+        self.btn_update = ctk.CTkButton(self.action_frame, text="Concluir Chamado", 
+                                 fg_color="orange", hover_color="#b8860b",
+                                 command=self.controller.atualizar_status_logica)
+        self.btn_update.pack(side="left", padx=5)
 
         self.btn_delete = ctk.CTkButton(self.action_frame, text="Excluir Selecionado", 
                                          fg_color="#910000", hover_color="#6b0000",
                                          command=self.controller.excluir_chamado_logica)
         self.btn_delete.pack(side="right", padx=5)
 
-        # 7. Carregar dados iniciais
+        #-- Carregar dados iniciais --
         self.controller.carregar_tabela_chamados()
 
     def abrir_formulario_chamado(self):
-        """Cria uma janela pop-up (Toplevel) para cadastrar novo chamado"""
         self.janela_pop = ctk.CTkToplevel(self)
         self.janela_pop.title("Novo Chamado")
-        self.janela_pop.geometry("400x400")
-        self.janela_pop.attributes("-topmost", True) # Mantém a janela na frente
+        # Aumentei para 500 para o botão "respirar" e aparecer
+        self.janela_pop.geometry("400x500") 
+        self.janela_pop.attributes("-topmost", True)
 
         ctk.CTkLabel(self.janela_pop, text="Abrir Novo Chamado", font=("Arial", 18, "bold")).pack(pady=20)
 
         entry_titulo = ctk.CTkEntry(self.janela_pop, placeholder_text="Título do Problema", width=300)
         entry_titulo.pack(pady=10)
 
-        entry_desc = ctk.CTkTextbox(self.janela_pop, width=300, height=150)
-        entry_desc.pack(pady=10)
-        entry_desc.insert("0.0", "Descrição do problema...")
+        # Adicionando a Prioridade
+        entry_prioridade = ctk.CTkOptionMenu(self.janela_pop, values=["Baixo", "Moderado", "Alto"], width=300)
+        entry_prioridade.set("Baixo") 
+        entry_prioridade.pack(pady=10)
 
+        entry_desc = ctk.CTkTextbox(self.janela_pop, width=300, height=120)
+        entry_desc.pack(pady=10)
+        entry_desc.insert("0.0","Descrição do chamado...")
+
+        # AGORA PASSANDO A PRIORIDADE NO COMMAND
         btn_salvar = ctk.CTkButton(self.janela_pop, text="Salvar Chamado", 
-                                   command=lambda: self.controller.novo_chamado_logica(
-                                       entry_titulo.get(), 
-                                       entry_desc.get("0.0", "end-1c"), 
-                                       self.janela_pop
-                                   ))
+                                command=lambda: self.controller.novo_chamado_logica(
+                                    entry_titulo.get(), 
+                                    entry_desc.get("0.0", "end-1c"),
+                                    entry_prioridade.get(), # <-- Pegando o valor do Menu
+                                    self.janela_pop
+                                ))
         btn_salvar.pack(pady=20)
+
+    def abrir_janela_detalhes(self, titulo, prioridade, descricao):
+        janela_info = ctk.CTkToplevel(self)
+        janela_info.title(f"Detalhes do Chamado")
+        janela_info.geometry("400x450")
+        janela_info.attributes("-topmost", True)
+
+        ctk.CTkLabel(janela_info, text="Detalhes do Chamado", font=("Arial", 18, "bold")).pack(pady=15)
         
+        ctk.CTkLabel(janela_info, text=f"Título: {titulo}", font=("Arial", 14, "bold")).pack(pady=5)
+        ctk.CTkLabel(janela_info, text=f"Prioridade: {prioridade}").pack(pady=5)
+        
+        txt_desc = ctk.CTkTextbox(janela_info, width=350, height=200)
+        txt_desc.pack(pady=10)
+        txt_desc.insert("0.0", descricao)
+        txt_desc.configure(state="disabled") # Bloqueia edição
+
+        ctk.CTkButton(janela_info, text="Fechar", command=janela_info.destroy).pack(pady=10)
+    
         
