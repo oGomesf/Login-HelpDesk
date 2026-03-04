@@ -76,13 +76,14 @@ class AppController(BackEnd):
         for i in lista:
             self.view.tree.insert("", "end", values=i)
 
-    def novo_chamado_logica(self, titulo, desc, janela_popup):
+    def novo_chamado_logica(self, titulo, desc, prioridade, janela_popup):
         """Lógica para salvar e atualizar a tela"""
         if titulo == "" or desc == "":
             messagebox.showwarning("Aviso", "Preencha o título e a descrição!")
             return
 
-        sucesso = self.salvar_chamado_db(titulo, desc)
+        sucesso = self.salvar_chamado_db(titulo, desc, prioridade)
+
         if sucesso:
             messagebox.showinfo("Sucesso", "Chamado aberto com sucesso!")
             janela_popup.destroy() # Fecha a janelinha de cadastro
@@ -101,3 +102,45 @@ class AppController(BackEnd):
                     self.carregar_tabela_chamados()
         except IndexError:
             messagebox.showwarning("Aviso", "Selecione um chamado na tabela primeiro!")
+
+    def atualizar_status_logica(self):
+        """Muda o status do chamado selecionado para 'Concluído'"""
+        try:
+            item_selecionado = self.view.tree.selection()[0]
+            valores = self.view.tree.item(item_selecionado, "values")
+            id_chamado = valores[0]
+
+            if messagebox.askyesno("Confirmar", f"Deseja marcar o chamado #{id_chamado} como Concluído?"):
+                if self.atualizar_chamado_db(id_chamado, "Concluído"):
+                    messagebox.showinfo("Sucesso", "Status atualizado!")
+                    self.carregar_tabela_chamados()
+        except IndexError:
+            messagebox.showwarning("Aviso", "Selecione um chamado na tabela para atualizar!")
+
+    def ver_informacoes_logica(self):
+        try:
+            item_selecionado = self.view.tree.selection()[0]
+            valores = self.view.tree.item(item_selecionado, "values")
+            id_chamado = valores[0]
+
+            # Precisamos buscar a descrição no banco pelo ID
+            self.ConectarDB()
+            self.cursor.execute("SELECT titulo, prioridade, descricao FROM Chamados WHERE id = ?", (id_chamado,))
+            dados = self.cursor.fetchone()
+            self.DesconectDB()
+
+            if dados:
+                self.view.abrir_janela_detalhes(dados[0], dados[1], dados[2])
+
+        except IndexError:
+            messagebox.showwarning("Aviso", "Selecione um chamado na tabela!")
+
+    def fazer_logout(self):
+        if messagebox.askyesno("Sair", "Deseja realmente sair?"):
+            # Limpa todos os widgets para não dar conflito de grid/pack
+            for widget in self.view.winfo_children():
+                widget.destroy()
+            
+            self.view.geometry("700x400")
+            self.view.tela_login()
+    

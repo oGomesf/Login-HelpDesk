@@ -28,11 +28,12 @@ class BackEnd():
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS Chamados(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                titulo TEXT NOT NULL,
-                descricao TEXT,
-                status TEXT DEFAULT 'Aberto',
-                data_abertura DATETIME DEFAULT CURRENT_TIMESTAMP
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            descricao TEXT,
+            status TEXT DEFAULT 'Aberto',
+            prioridade TEXT DEFAULT 'Baixo',
+            data_abertura DATETIME DEFAULT (datetime('now', 'localtime'))
             );
         """)
 
@@ -42,13 +43,13 @@ class BackEnd():
 
         # --- MÉTODOS DO CRUD DE CHAMADOS ---
 
-    def salvar_chamado_db(self, titulo, descricao):
+    def salvar_chamado_db(self, titulo, descricao, prioridade):
         """Insere um novo chamado no banco"""
         self.ConectarDB()
         try:
             self.cursor.execute("""
-                INSERT INTO Chamados (titulo, descricao)
-                VALUES (?, ?)""", (titulo, descricao))
+                INSERT INTO Chamados (titulo, descricao, prioridade)
+                VALUES (?, ?, ?)""", (titulo, descricao, prioridade))
             self.conn.commit()
             return True
         except Exception as e:
@@ -60,7 +61,7 @@ class BackEnd():
     def buscar_chamados_db(self):
         """Retorna todos os chamados para listar na Treeview"""
         self.ConectarDB()
-        self.cursor.execute("SELECT id, titulo, status, data_abertura FROM Chamados ORDER BY id DESC")
+        self.cursor.execute("SELECT id, titulo, prioridade, status,  data_abertura FROM Chamados ORDER BY id DESC")
         dados = self.cursor.fetchall()
         self.DesconectDB()
         return dados
